@@ -50,9 +50,14 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	public void execute() throws MojoExecutionException {
 		Log tempLog = getLog();
 		tempLog.info("Hello, world.");
-		tempLog.info("Current Dir = " + new File(".").getAbsolutePath());
+		File tempCurrentDir = new File(".");
+		tempLog.info("Current Dir = " + tempCurrentDir.getAbsolutePath());
 		File tempPomFile = project.getFile();
 		tempLog.info("Project.file = " + tempPomFile);
+		if (new File(tempPomFile.getName()).getAbsolutePath().equals(tempPomFile.getAbsolutePath())) {
+			tempLog.info("Ignore parent");
+			return;
+		}
 
 		try {
 			callMaven("package", tempPomFile.getName(), tempPomFile.getParentFile());
@@ -131,7 +136,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			try {
 				callMaven("deploy", tempPomFile.getName(), tempPomFile.getParentFile());
 			} catch (MavenCallFailedException e) {
-				throw new MojoExecutionException("Failed to deploy "+tempPomFile, e);
+				throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 			}
 		} else {
 			tempLog.info("Nothing changed. All dependencies needed.");
@@ -286,7 +291,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 */
 	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory) throws MavenCallFailedException {
 		Commandline cl = new Commandline("mvn");
-		if (getLog().isDebugEnabled()) {
+		final Log tempLog = getLog();
+		if (tempLog.isDebugEnabled()) {
 			cl.addArguments(new String[] { "clean", aGoal, "-f", aPomFileName, "-X" });
 		} else {
 			cl.addArguments(new String[] { "clean", aGoal, "-f", aPomFileName });
@@ -296,16 +302,19 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		StreamConsumer output = new StreamConsumer() {
 			@Override
 			public void consumeLine(String aLine) {
-				getLog().info("[Unused] " + aLine);
+				if (tempLog.isDebugEnabled()) {
+					tempLog.debug("[Unused] " + aLine);
+				}
 			}
 		};
 		StreamConsumer error = new StreamConsumer() {
 			@Override
 			public void consumeLine(String aLine) {
-				getLog().error("[Unused] " + aLine);
+				if (tempLog.isDebugEnabled()) {
+					tempLog.debug("[Unused] " + aLine);
+				}
 			}
 		};
-		Log tempLog = getLog();
 		tempLog.info("Execute " + cl + " in " + aWorkingDirectory + " ...");
 		int tempReturnValue;
 		try {
