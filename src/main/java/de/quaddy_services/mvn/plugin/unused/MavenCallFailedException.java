@@ -8,7 +8,6 @@
 //
 package de.quaddy_services.mvn.plugin.unused;
 
-
 /**
  * Insert the type description here.
  * 
@@ -46,4 +45,3 @@ public class MavenCallFailedException extends Exception {
 	}
 
 }
-
