@@ -79,6 +79,13 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				return;
 			}
 		}
+		String tempPackaging = project.getPackaging();
+		if (tempPackaging == null || tempPackaging.equals("jar")) {
+			tempLog.debug("ok:"+tempPackaging);
+		} else {
+			tempLog.debug("Packaging not supported: "+tempPackaging);
+			return;
+		}
 
 		try {
 			callMaven("package", tempPomFile.getName(), tempPomFile.getParentFile());
