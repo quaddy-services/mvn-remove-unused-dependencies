@@ -21,14 +21,12 @@ public interface NodeModifyAction {
 
 
 	/**
-	 * Insert the method description here.
-	 * 
+	 * modify
 	 * @param aAnUpdateDoc
 	 * @param aFoundDependency
-	 * @author dt0b35
-	 * @since 13.11.2012 23:21:16
+	 * @param aDependencyId void
 	 */
-	void modify(Document aAnUpdateDoc, Node aFoundDependency);
+	void modify(Document aAnUpdateDoc, Node aFoundDependency, String aDependencyId);
 
 }
 

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -46,17 +47,37 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 */
 	private MavenProject project;
 
+	/**
+	  * Set IncludeParent to true the check dependencies in parents poms 
+	  * or to check in stand alone projects.
+	  *
+	  * @parameter default-value="false" expression="${remove.includeParent}"
+	  */
+	private boolean includeParent;
+
+	/**
+	  * Set debug2ndMaven to true to see the output of called maven goals as debug output, too.
+	  * 
+	  * Specify just "-X" will not show all output of delegated maven.
+	  *
+	  * @parameter default-value="false" expression="${remove.debug2ndMaven}"
+	  */
+	private boolean debug2ndMaven;
+
 	@Override
 	public void execute() throws MojoExecutionException {
 		Log tempLog = getLog();
-		tempLog.info("Hello, world.");
+		tempLog.debug("Hello, world.");
 		File tempCurrentDir = new File(".");
-		tempLog.info("Current Dir = " + tempCurrentDir.getAbsolutePath());
+		tempLog.debug("Current Dir = " + tempCurrentDir.getAbsolutePath());
 		File tempPomFile = project.getFile();
-		tempLog.info("Project.file = " + tempPomFile);
-		if (new File(tempPomFile.getName()).getAbsolutePath().equals(tempPomFile.getAbsolutePath())) {
-			tempLog.info("Ignore parent");
-			return;
+		tempLog.debug("Project.file = " + tempPomFile);
+		boolean tempIsParent = new File(tempPomFile.getName()).getAbsolutePath().equals(tempPomFile.getAbsolutePath());
+		if (!includeParent) {
+			if (tempIsParent) {
+				tempLog.warn("Ignore parent");
+				return;
+			}
 		}
 
 		try {
@@ -76,7 +97,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		} catch (Exception e) {
 			throw new MojoExecutionException("Initialization Error", e);
 		}
-		List<Dependency> tempDependencies = project.getDependencies();
+		List<Dependency> tempDependencies = getDependencies();
 		boolean tempModified = false;
 		for (Dependency tempDependency : tempDependencies) {
 			String tempScope = tempDependency.getScope();
@@ -86,7 +107,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				if (tempModifiedDoc != null) {
 					try {
 						callMaven("package", "pom-temp.xml", tempPomFile.getParentFile());
+						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
+						tempLog.info("-------------------------------------------------------------------------");
 						tempDoc = tempModifiedDoc;
 						tempModified = true;
 					} catch (MavenCallFailedException e) {
@@ -95,7 +118,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 								+ "/pom-temp.xml", "test");
 						try {
 							callMaven("package", "pom-temp.xml", tempPomFile.getParentFile());
+							tempLog.info("-------------------------------------------------------------------------");
 							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is for test only");
+							tempLog.info("-------------------------------------------------------------------------");
 							tempDoc = tempModifiedDoc;
 							tempModified = true;
 						} catch (MavenCallFailedException e2) {
@@ -109,7 +134,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				if (tempModifiedDoc != null) {
 					try {
 						callMaven("package", "pom-temp.xml", tempPomFile.getParentFile());
+						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
+						tempLog.info("-------------------------------------------------------------------------");
 						tempDoc = tempModifiedDoc;
 						tempModified = true;
 					} catch (MavenCallFailedException e) {
@@ -138,9 +165,30 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			} catch (MavenCallFailedException e) {
 				throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 			}
+//			if (!tempIsParent) {
+//				tempLog.info("And checkin the result");
+//				try {
+//					callMaven("scm:checkin", tempPomFile.getName(), tempCurrentDir.getAbsoluteFile(), "-Dincludes="
+//							+ tempPomFile.getParentFile().getName() + "/pom.xml", "-Dmessage=" + getClass().getName(),
+//							"-N");
+//				} catch (MavenCallFailedException e) {
+//					tempLog.warn("Could not checkin: " + e.getMessage());
+//					tempLog.warn("You need to checkin manually");
+//					tempLog.debug("Details:", e);
+//				}
+//			}
 		} else {
 			tempLog.info("Nothing changed. All dependencies needed.");
 		}
+	}
+
+	/**
+	 * getDependencies
+	 * @return List
+	 */
+	@SuppressWarnings("unchecked")
+	private List<Dependency> getDependencies() {
+		return project.getDependencies();
 	}
 
 	/**
@@ -159,7 +207,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			throws MojoExecutionException {
 		return updateDocument(aDoc, aDependency, aFileName, new NodeModifyAction() {
 			@Override
-			public void modify(Document anUpdateDoc, Node aFoundDependency) {
+			public void modify(Document anUpdateDoc, Node aFoundDependency, String aDependencyId) {
+				Log tempLog = getLog();
+				tempLog.info("Try to set to scope test" + aDependencyId);
 				boolean tempScopeUpdated = false;
 				NodeList tempChildNodes = aFoundDependency.getChildNodes();
 				for (int c = 0; c < tempChildNodes.getLength(); c++) {
@@ -167,13 +217,13 @@ public class RemoveUnusedMojo extends AbstractMojo {
 					String tempNodeName = tempChild.getNodeName();
 					//					tempLog.debug("Child=" + tempNodeName);
 					if (tempNodeName.equals("scope")) {
-						tempChild.setTextContent("test");
+						tempChild.setTextContent(aScope);
 						tempScopeUpdated = true;
 					}
 				}
 				if (!tempScopeUpdated) {
 					Element tempScope = anUpdateDoc.createElementNS(anUpdateDoc.getNamespaceURI(), "scope");
-					tempScope.setTextContent("test");
+					tempScope.setTextContent(aScope);
 					aFoundDependency.appendChild(tempScope);
 				}
 			}
@@ -195,7 +245,10 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			throws MojoExecutionException {
 		return updateDocument(aDoc, aDependency, aFileName, new NodeModifyAction() {
 			@Override
-			public void modify(Document anUpdateDoc, Node aFoundDependency) {
+			public void modify(@SuppressWarnings("unused") Document anUpdateDoc, Node aFoundDependency,
+					String aDependencyId) {
+				Log tempLog = getLog();
+				tempLog.info("Try to remove " + aDependencyId);
 				aFoundDependency.getParentNode().removeChild(aFoundDependency);
 			}
 		});
@@ -213,7 +266,6 @@ public class RemoveUnusedMojo extends AbstractMojo {
 
 			String tempDependencyId = aDependency.getGroupId() + ":" + aDependency.getArtifactId();
 			Log tempLog = getLog();
-			tempLog.info("Remove " + tempDependencyId);
 			tempLog.debug("aDoc.getNamespaceURI()=" + aDoc.getNamespaceURI());
 			tempLog.debug("copiedDocument.getNamespaceURI()=" + copiedDocument.getNamespaceURI());
 			tempLog.debug("copiedDocument.childNodes.length=" + copiedDocument.getChildNodes().getLength());
@@ -251,7 +303,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				tempLog.warn("No Dependency " + tempDependencyId + " in " + copiedDocument + " probably in parent pom");
 				return null;
 			}
-			aNodeModifyAction.modify(copiedDocument, tempFoundDependency);
+			aNodeModifyAction.modify(copiedDocument, tempFoundDependency, tempDependencyId);
 
 			// Use a Transformer for output
 			TransformerFactory tFactory = TransformerFactory.newInstance();
@@ -289,14 +341,26 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 * @throws MavenCallFailedException 
 	 * @since 13.11.2012 21:14:17
 	 */
-	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory) throws MavenCallFailedException {
+	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory, String... anAdditionalParameters)
+			throws MavenCallFailedException {
 		Commandline cl = new Commandline("mvn");
 		final Log tempLog = getLog();
-		if (tempLog.isDebugEnabled()) {
-			cl.addArguments(new String[] { "clean", aGoal, "-f", aPomFileName, "-X" });
-		} else {
-			cl.addArguments(new String[] { "clean", aGoal, "-f", aPomFileName });
+		List<String> tempArgs = new ArrayList<String>();
+		tempArgs.add("clean");
+		tempArgs.add(aGoal);
+		tempArgs.add("-f");
+		tempArgs.add(aPomFileName);
+
+		if (debug2ndMaven) {
+			tempArgs.add("-X");
 		}
+
+		for (String tempAddArg : anAdditionalParameters) {
+			tempArgs.add(tempAddArg);
+		}
+
+		cl.addArguments(tempArgs.toArray(new String[tempArgs.size()]));
+
 		cl.setWorkingDirectory(aWorkingDirectory);
 		InputStream input = null;
 		StreamConsumer output = new StreamConsumer() {
