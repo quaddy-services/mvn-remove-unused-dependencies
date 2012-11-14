@@ -75,7 +75,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		boolean tempIsParent = new File(tempPomFile.getName()).getAbsolutePath().equals(tempPomFile.getAbsolutePath());
 		if (!includeParent) {
 			if (tempIsParent) {
-				tempLog.warn("Ignore parent");
+				tempLog.warn("Ignore parent set -Dremove.includeParent=true to check the parent/stand-alone.");
 				return;
 			}
 		}
