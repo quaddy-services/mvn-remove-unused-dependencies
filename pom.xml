@@ -5,6 +5,34 @@
 	<packaging>maven-plugin</packaging>
 	<version>1.0-SNAPSHOT</version>
 	<name>mvn-remove-unused-dependencies</name>
+	<description>Remove unused maven dependencies out of pom.xml</description>
+	<scm>
+		<connection>scm:git:http://github.com/quaddy-services/mvn-remove-unused-dependencies.git</connection>
+		<developerConnection>scm:git:https://github.com/quaddy-services/mvn-remove-unused-dependencies.git</developerConnection>
+		<url>https://github.com/quaddy-services/mvn-remove-unused-dependencies</url>
+	</scm>
+	<url>http://www.quaddy-services.de</url>
+	<licenses>
+		<license>
+			<name>Apache License 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<id>sc</id>
+			<name>Stefan Cordes</name>
+			<email>mail@quaddy-services.de</email>
+			<url>http://quaddy-services.de</url>
+			<organization>quaddy-services.de</organization>
+			<organizationUrl>http://quaddy-services.de</organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>+1</timezone>
+		</developer>
+	</developers>
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.maven</groupId>
