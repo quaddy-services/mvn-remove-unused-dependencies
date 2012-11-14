@@ -209,7 +209,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			@Override
 			public void modify(Document anUpdateDoc, Node aFoundDependency, String aDependencyId) {
 				Log tempLog = getLog();
-				tempLog.info("Try to set to scope test" + aDependencyId);
+				tempLog.info("Try to set to scope "+aScope+" for " + aDependencyId);
 				boolean tempScopeUpdated = false;
 				NodeList tempChildNodes = aFoundDependency.getChildNodes();
 				for (int c = 0; c < tempChildNodes.getLength(); c++) {
