@@ -1,5 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
 	<groupId>de.quaddy_services.mvn.plugin.unused</groupId>
 	<artifactId>mvn-remove-unused-dependencies</artifactId>
 	<packaging>maven-plugin</packaging>
@@ -7,11 +12,12 @@
 	<name>mvn-remove-unused-dependencies</name>
 	<description>Remove unused maven dependencies out of pom.xml</description>
 	<scm>
-		<connection>scm:git:http://github.com/quaddy-services/mvn-remove-unused-dependencies.git</connection>
-		<developerConnection>scm:git:https://github.com/quaddy-services/mvn-remove-unused-dependencies.git</developerConnection>
-		<url>https://github.com/quaddy-services/mvn-remove-unused-dependencies</url>
+		<!-- see https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide -->
+		<connection>scm:git:git@github.com:quaddy-services/mvn-remove-unused-dependencies.git</connection>
+		<developerConnection>scm:git:git@github.com:quaddy-services/mvn-remove-unused-dependencies.git</developerConnection>
+		<url>scm:git:git@github.com:quaddy-services/mvn-remove-unused-dependencies</url>
 	</scm>
-	<url>http://www.quaddy-services.de</url>
+	<url>https://github.com/quaddy-services/mvn-remove-unused-dependencies</url>
 	<licenses>
 		<license>
 			<name>Apache License 2.0</name>
@@ -54,4 +60,28 @@
 			<version>3.0.8</version>
 		</dependency>
 	</dependencies>
+	<distributionManagement>
+		<site>
+			<id>adr-de-mvn-remove-unused-dependencies</id>
+			<url>ftp://www.adr.de</url>
+		</site>
+	</distributionManagement>
+	<build>
+		<!-- for other plugins use profile sonatype-oss-release -->
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>3.2</version>
+			</plugin>
+		</plugins>
+		<extensions>
+			<!-- Enabling the use of FTP -->
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ftp</artifactId>
+				<version>1.0-beta-6</version>
+			</extension>
+		</extensions>
+	</build>
 </project>
