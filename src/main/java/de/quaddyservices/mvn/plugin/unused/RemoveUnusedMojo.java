@@ -1,4 +1,4 @@
-package de.quaddy_services.mvn.plugin.unused;
+package de.quaddyservices.mvn.plugin.unused;
 
 import java.io.BufferedReader;
 import java.io.File;

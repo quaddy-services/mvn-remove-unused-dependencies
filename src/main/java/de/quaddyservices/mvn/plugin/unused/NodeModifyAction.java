@@ -6,7 +6,7 @@
 // All rights reserved.
 //
 //
-package de.quaddy_services.mvn.plugin.unused;
+package de.quaddyservices.mvn.plugin.unused;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;

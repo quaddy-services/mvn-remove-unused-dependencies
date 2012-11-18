@@ -6,7 +6,7 @@
 // All rights reserved.
 //
 //
-package de.quaddy_services.mvn.plugin.unused;
+package de.quaddyservices.mvn.plugin.unused;
 
 /**
  * Insert the type description here.
