@@ -8,4 +8,5 @@
 /bin
 /build.properties
 /.classpath
-
+/pom.xml.releaseBackup
+/release.properties
