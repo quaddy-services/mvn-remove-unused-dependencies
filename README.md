@@ -6,3 +6,8 @@ update pom.xml with removed dependency.
 
 Changes scopy to test in case of test-only dependency.
 
+Usage:
+mvn de.quaddyservices.mvn.plugin.unused:mvn-remove-unused-dependencies:remove
+
+(for single parents):
+mvn de.quaddyservices.mvn.plugin.unused:mvn-remove-unused-dependencies:remove -Dremove.includeParent=true
