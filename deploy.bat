@@ -6,6 +6,7 @@ rem gpg --gen-key
 rem gpg --keyserver hkp://pool.sks-keyservers.net --send-keys C6EED57A
 rem see http://www.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
 rem gpg --list-keys
+rem https://github.com/downloads/anurse/git-credential-winstore/git-credential-winstore.exe
 call mvn clean deploy -Dgpg.passphrase=%quaddypassphrase% -P sonatype-oss-release
 
 echo on 
