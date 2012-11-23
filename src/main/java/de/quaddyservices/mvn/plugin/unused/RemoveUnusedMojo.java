@@ -32,7 +32,7 @@ import org.w3c.dom.NodeList;
 
 /**
  * Removed unused
- *
+ * 
  * @goal remove
  * @requiresProject true
  * 
@@ -48,20 +48,21 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	private MavenProject project;
 
 	/**
-	  * Set IncludeParent to true the check dependencies in parents poms 
-	  * or to check in stand alone projects.
-	  *
-	  * @parameter default-value="false" expression="${remove.includeParent}"
-	  */
+	 * Set IncludeParent to true the check dependencies in parents poms or to
+	 * check in stand alone projects.
+	 * 
+	 * @parameter default-value="false" expression="${remove.includeParent}"
+	 */
 	private boolean includeParent;
 
 	/**
-	  * Set debug2ndMaven to true to see the output of called maven goals as debug output, too.
-	  * 
-	  * Specify just "-X" will not show all output of delegated maven.
-	  *
-	  * @parameter default-value="false" expression="${remove.debug2ndMaven}"
-	  */
+	 * Set debug2ndMaven to true to see the output of called maven goals as
+	 * debug output, too.
+	 * 
+	 * Specify just "-X" will not show all output of delegated maven.
+	 * 
+	 * @parameter default-value="false" expression="${remove.debug2ndMaven}"
+	 */
 	private boolean debug2ndMaven;
 
 	@Override
@@ -88,7 +89,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 
 		try {
-			callMaven("package", tempPomFile.getName(), tempPomFile.getParentFile());
+			callMaven("package", tempPomFile.getName(), tempPomFile.getParentFile(), false);
 		} catch (MavenCallFailedException e) {
 			throw new MojoExecutionException("clean package goal must work!", e);
 		}
@@ -114,7 +115,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomTempFile);
 				if (tempModifiedDoc != null) {
 					try {
-						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile());
+						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
 						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
 						tempLog.info("-------------------------------------------------------------------------");
@@ -124,7 +125,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 						tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for compile");
 						tempModifiedDoc = changeScope(tempDoc, tempDependency, tempPomTempFile, "test");
 						try {
-							callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile());
+							callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
 							tempLog.info("-------------------------------------------------------------------------");
 							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is for test only");
 							tempLog.info("-------------------------------------------------------------------------");
@@ -139,7 +140,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomTempFile);
 				if (tempModifiedDoc != null) {
 					try {
-						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile());
+						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
 						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
 						tempLog.info("-------------------------------------------------------------------------");
@@ -167,22 +168,24 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			}
 			tempLog.info("Finally deploy the version (for further reactor projects)");
 			try {
-				callMaven("deploy", tempPomFile.getName(), tempPomFile.getParentFile());
+				callMaven("deploy", tempPomFile.getName(), tempPomFile.getParentFile(), false);
 			} catch (MavenCallFailedException e) {
 				throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 			}
-			//			if (!tempIsParent) {
-			//				tempLog.info("And checkin the result");
-			//				try {
-			//					callMaven("scm:checkin", tempPomFile.getName(), tempCurrentDir.getAbsoluteFile(), "-Dincludes="
-			//							+ tempPomFile.getParentFile().getName() + "/pom.xml", "-Dmessage=" + getClass().getName(),
-			//							"-N");
-			//				} catch (MavenCallFailedException e) {
-			//					tempLog.warn("Could not checkin: " + e.getMessage());
-			//					tempLog.warn("You need to checkin manually");
-			//					tempLog.debug("Details:", e);
-			//				}
-			//			}
+			// if (!tempIsParent) {
+			// tempLog.info("And checkin the result");
+			// try {
+			// callMaven("scm:checkin", tempPomFile.getName(),
+			// tempCurrentDir.getAbsoluteFile(), "-Dincludes="
+			// + tempPomFile.getParentFile().getName() + "/pom.xml",
+			// "-Dmessage=" + getClass().getName(),
+			// "-N");
+			// } catch (MavenCallFailedException e) {
+			// tempLog.warn("Could not checkin: " + e.getMessage());
+			// tempLog.warn("You need to checkin manually");
+			// tempLog.debug("Details:", e);
+			// }
+			// }
 		} else {
 			tempLog.info("Nothing changed. All dependencies needed.");
 		}
@@ -191,6 +194,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 
 	/**
 	 * getDependencies
+	 * 
 	 * @return List
 	 */
 	@SuppressWarnings("unchecked")
@@ -207,7 +211,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 * @param aString2
 	 * @return
 	 * @author dt0b35
-	 * @throws MojoExecutionException 
+	 * @throws MojoExecutionException
 	 * @since 13.11.2012 23:05:35
 	 */
 	private Document changeScope(Document aDoc, Dependency aDependency, File aFile, final String aScope)
@@ -222,7 +226,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				for (int c = 0; c < tempChildNodes.getLength(); c++) {
 					Node tempChild = tempChildNodes.item(c);
 					String tempNodeName = tempChild.getNodeName();
-					//					tempLog.debug("Child=" + tempNodeName);
+					// tempLog.debug("Child=" + tempNodeName);
 					if (tempNodeName.equals("scope")) {
 						tempChild.setTextContent(aScope);
 						tempScopeUpdated = true;
@@ -244,15 +248,15 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 * @param aDependency
 	 * @param aString
 	 * @author dt0b35
-	 * @return 
-	 * @throws MojoExecutionException 
+	 * @return
+	 * @throws MojoExecutionException
 	 * @since 13.11.2012 21:31:27
 	 */
 	private Document removeDependency(Document aDoc, Dependency aDependency, File aFile) throws MojoExecutionException {
 		return updateDocument(aDoc, aDependency, aFile, new NodeModifyAction() {
 			@Override
-			public void modify(@SuppressWarnings("unused") Document anUpdateDoc, Node aFoundDependency,
-					String aDependencyId) {
+			public void modify(@SuppressWarnings("unused")
+			Document anUpdateDoc, Node aFoundDependency, String aDependencyId) {
 				Log tempLog = getLog();
 				tempLog.info("Try to remove " + aDependencyId);
 				aFoundDependency.getParentNode().removeChild(aFoundDependency);
@@ -291,7 +295,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				for (int c = 0; c < tempChildNodes.getLength(); c++) {
 					Node tempChild = tempChildNodes.item(c);
 					String tempNodeName = tempChild.getNodeName();
-					//					tempLog.debug("Child=" + tempNodeName);
+					// tempLog.debug("Child=" + tempNodeName);
 					if (tempNodeName.equals("groupId")) {
 						tempGroupId = tempChild.getTextContent();
 					}
@@ -335,18 +339,20 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 	}
 
+	private static final String CRLF = System.getProperty("line.separator", "\r\n");
+
 	/**
 	 * Insert the method description here.
 	 * 
 	 * @param aGoal
 	 * @param aName
 	 * @author dt0b35
-	 * @param aWorkingDirectory 
-	 * @throws MavenCallFailedException 
+	 * @param aWorkingDirectory
+	 * @throws MavenCallFailedException
 	 * @since 13.11.2012 21:14:17
 	 */
-	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory, String... anAdditionalParameters)
-			throws MavenCallFailedException {
+	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory, boolean aSilentExceptionFlag,
+			String... anAdditionalParameters) throws MavenCallFailedException {
 		Commandline cl = new Commandline("mvn");
 		final Log tempLog = getLog();
 		List<String> tempArgs = new ArrayList<String>();
@@ -363,8 +369,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			tempArgs.add(tempAddArg);
 		}
 
+		final StringBuilder tempLines = new StringBuilder();
 		cl.addArguments(tempArgs.toArray(new String[tempArgs.size()]));
-
 		cl.setWorkingDirectory(aWorkingDirectory);
 		InputStream input = null;
 		StreamConsumer output = new StreamConsumer() {
@@ -373,6 +379,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				if (tempLog.isDebugEnabled()) {
 					tempLog.debug("[Unused] " + aLine);
 				}
+				tempLines.append(aLine);
+				tempLines.append(CRLF);
 			}
 		};
 		StreamConsumer error = new StreamConsumer() {
@@ -381,6 +389,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				if (tempLog.isDebugEnabled()) {
 					tempLog.debug("[Unused] " + aLine);
 				}
+				tempLines.append(aLine);
+				tempLines.append(CRLF);
 			}
 		};
 		tempLog.info("Execute " + cl + " in " + aWorkingDirectory + " ...");
@@ -392,7 +402,10 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 		tempLog.info("Result=" + tempReturnValue);
 		if (tempReturnValue != 0) {
-			throw new MavenCallFailedException("Returnvalue = " + tempReturnValue + " cl=" + cl);
+			if (aSilentExceptionFlag) {
+				throw new MavenCallFailedException("Returnvalue = " + tempReturnValue + " cl=" + cl);
+			}
+			throw new MavenCallFailedException("Returnvalue = " + tempReturnValue + " cl=" + cl + CRLF + tempLines);
 		}
 	}
 }
