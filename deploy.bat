@@ -13,4 +13,6 @@ echo on
 rem for relase behind a proxy:
 rem $ git config --global http.proxy http://proxyuser:proxypwd@proxy.server.com:8080
 
+rem GIT_SSH=C:\Programs\putty\plink.exe 
+rem C:\Programs\putty\PAGEANT.EXE C:\Users\User\.ssh\putty.ppk
 rem mvn release:prepare release:perform -Dresume=false -Darguments=-Dgpg.passphrase=%quaddypassphrase% -P sonatype-oss-release
