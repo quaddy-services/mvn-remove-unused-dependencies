@@ -31,11 +31,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Removed unused
+ * Remove unused maven dependencies out of your pom.xml
  * 
  * @goal remove
  * @requiresProject true
- * 
  */
 public class RemoveUnusedMojo extends AbstractMojo {
 	/**
