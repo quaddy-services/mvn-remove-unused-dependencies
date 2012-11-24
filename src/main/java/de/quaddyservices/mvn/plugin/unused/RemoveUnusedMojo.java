@@ -31,7 +31,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Remove unused maven dependencies out of your pom.xml
+ * <br/>
+ * Remove unused maven dependencies out of your pom.xml.<br/>
+ * Goal will remove one by one and try <br/>
+ * to call mvn package without that dependency for all dependencies.
  * 
  * @goal remove
  * @requiresProject true
