@@ -89,7 +89,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 
 		try {
-			callMaven("package", tempPomFile.getName(), tempPomFile.getParentFile(), false);
+			callMaven("package", tempPomFile.getParentFile(), false);
 		} catch (MavenCallFailedException e) {
 			throw new MojoExecutionException("clean package goal must work!", e);
 		}
@@ -107,15 +107,25 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 		List<Dependency> tempDependencies = getDependencies();
 		boolean tempModified = false;
-		File tempPomTempFile = new File(tempPomFile.getParent() + "/pom-temp.xml");
-		tempPomTempFile.deleteOnExit();
+		File tempPomBackupFile = new File(tempPomFile.getParent() + "/pom-backup-remove-unused-mojo.xml");
+		if (tempPomBackupFile.exists()) {
+			throw new MojoExecutionException("Backup File exists. Probably aborted? Rename "
+					+ tempPomBackupFile.getAbsolutePath() + " back to " + tempPomFile.getAbsolutePath()
+					+ " before running!");
+		}
+		tempLog.debug("Rename " + tempPomFile.getAbsolutePath() + " to " + tempPomBackupFile.getAbsolutePath());
+		if (!tempPomFile.renameTo(tempPomBackupFile)) {
+			throw new MojoExecutionException("Could not rename " + tempPomFile.getAbsolutePath() + " to "
+					+ tempPomBackupFile.getAbsolutePath());
+		}
 		for (Dependency tempDependency : tempDependencies) {
 			String tempScope = tempDependency.getScope();
 			if (tempScope == null || tempScope.equals("compile")) {
-				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomTempFile);
+				tempLog.debug("Check compile dependency " + tempDependency.getArtifactId());
+				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
 				if (tempModifiedDoc != null) {
 					try {
-						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
+						callMaven("package", tempPomFile.getParentFile(), true);
 						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
 						tempLog.info("-------------------------------------------------------------------------");
@@ -123,9 +133,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 						tempModified = true;
 					} catch (MavenCallFailedException e) {
 						tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for compile");
-						tempModifiedDoc = changeScope(tempDoc, tempDependency, tempPomTempFile, "test");
+						tempModifiedDoc = changeScope(tempDoc, tempDependency, tempPomFile, "test");
 						try {
-							callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
+							callMaven("package", tempPomFile.getParentFile(), true);
 							tempLog.info("-------------------------------------------------------------------------");
 							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is for test only");
 							tempLog.info("-------------------------------------------------------------------------");
@@ -137,10 +147,11 @@ public class RemoveUnusedMojo extends AbstractMojo {
 					}
 				}
 			} else if (tempScope.equals("test")) {
-				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomTempFile);
+				tempLog.debug("Remove test dependency " + tempDependency.getArtifactId());
+				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
 				if (tempModifiedDoc != null) {
 					try {
-						callMaven("package", tempPomTempFile.getName(), tempPomFile.getParentFile(), true);
+						callMaven("package", tempPomFile.getParentFile(), true);
 						tempLog.info("-------------------------------------------------------------------------");
 						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
 						tempLog.info("-------------------------------------------------------------------------");
@@ -150,6 +161,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 						tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for test");
 					}
 				}
+			} else {
+				tempLog.info("Skip dependency " + tempDependency.getArtifactId());
 			}
 		}
 		if (tempModified) {
@@ -168,7 +181,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			}
 			tempLog.info("Finally deploy the version (for further reactor projects)");
 			try {
-				callMaven("deploy", tempPomFile.getName(), tempPomFile.getParentFile(), false);
+				callMaven("deploy", tempPomFile.getParentFile(), false);
 			} catch (MavenCallFailedException e) {
 				throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 			}
@@ -188,8 +201,12 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			// }
 		} else {
 			tempLog.info("Nothing changed. All dependencies needed.");
+			tempLog.debug("Rename back " + tempPomBackupFile.getAbsolutePath() + " to " + tempPomFile.getAbsolutePath());
+			if (!tempPomBackupFile.renameTo(tempPomFile)) {
+				throw new MojoExecutionException("Could not rename back " + tempPomBackupFile.getAbsolutePath()
+						+ " to " + tempPomFile.getAbsolutePath());
+			}
 		}
-		tempPomTempFile.delete();
 	}
 
 	/**
@@ -321,6 +338,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
 			DOMSource source = new DOMSource(copiedDocument);
+			tempLog.debug("Write " + aFile.getAbsolutePath());
 			StreamResult result = new StreamResult(aFile);
 			transformer.transform(source, result);
 
@@ -351,15 +369,13 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	 * @throws MavenCallFailedException
 	 * @since 13.11.2012 21:14:17
 	 */
-	private void callMaven(String aGoal, String aPomFileName, File aWorkingDirectory, boolean aSilentExceptionFlag,
+	private void callMaven(String aGoal, File aWorkingDirectory, boolean aSilentExceptionFlag,
 			String... anAdditionalParameters) throws MavenCallFailedException {
 		Commandline cl = new Commandline("mvn");
 		final Log tempLog = getLog();
 		List<String> tempArgs = new ArrayList<String>();
 		tempArgs.add("clean");
 		tempArgs.add(aGoal);
-		tempArgs.add("-f");
-		tempArgs.add(aPomFileName);
 
 		if (debug2ndMaven) {
 			tempArgs.add("-X");
