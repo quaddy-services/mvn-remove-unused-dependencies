@@ -204,6 +204,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		} else {
 			tempLog.info("Nothing changed. All dependencies needed.");
 			tempLog.debug("Rename back " + tempPomBackupFile.getAbsolutePath() + " to " + tempPomFile.getAbsolutePath());
+			tempPomFile.delete();
 			if (!tempPomBackupFile.renameTo(tempPomFile)) {
 				throw new MojoExecutionException("Could not rename back " + tempPomBackupFile.getAbsolutePath()
 						+ " to " + tempPomFile.getAbsolutePath());
