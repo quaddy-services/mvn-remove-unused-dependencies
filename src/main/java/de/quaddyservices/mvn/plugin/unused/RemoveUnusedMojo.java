@@ -187,6 +187,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			} catch (MavenCallFailedException e) {
 				throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 			}
+			if (!tempPomBackupFile.delete()) {
+				throw new MojoExecutionException("Could not delete backup " + tempPomBackupFile.getAbsolutePath());
+			}
 			// if (!tempIsParent) {
 			// tempLog.info("And checkin the result");
 			// try {
