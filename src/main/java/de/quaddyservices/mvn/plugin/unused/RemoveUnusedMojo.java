@@ -122,7 +122,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 		for (Dependency tempDependency : tempDependencies) {
 			String tempScope = tempDependency.getScope();
-			if (tempScope == null || tempScope.equals("compile")) {
+			if (tempScope == null || tempScope.equals("compile") || tempScope.equals("provided")) {
 				tempLog.debug("Check compile dependency " + tempDependency.getArtifactId());
 				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
 				if (tempModifiedDoc != null) {
@@ -164,7 +164,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 					}
 				}
 			} else {
-				tempLog.info("Skip dependency " + tempDependency.getArtifactId());
+				tempLog.info("Skip dependency " + tempDependency.getArtifactId()+" Scope="+tempScope);
 			}
 		}
 		if (tempModified) {
