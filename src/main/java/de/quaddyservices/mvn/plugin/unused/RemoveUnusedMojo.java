@@ -213,6 +213,13 @@ public class RemoveUnusedMojo extends AbstractMojo {
 						+ " to " + tempPomFile.getAbsolutePath());
 			}
 		}
+		// Clean up disk space.
+		tempLog.info("Clean up the target folder.");
+		try {
+			callMaven("clean", tempPomFile.getParentFile(), false);
+		} catch (MavenCallFailedException e) {
+			throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
+		}
 	}
 
 	/**
