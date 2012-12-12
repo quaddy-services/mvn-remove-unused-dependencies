@@ -164,7 +164,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 					}
 				}
 			} else {
-				tempLog.info("Skip dependency " + tempDependency.getArtifactId()+" Scope="+tempScope);
+				tempLog.info("Skip dependency " + tempDependency.getArtifactId() + " Scope=" + tempScope);
 			}
 		}
 		if (tempModified) {
@@ -216,7 +216,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		// Clean up disk space.
 		tempLog.info("Clean up the target folder.");
 		try {
-			callMaven("clean", tempPomFile.getParentFile(), false);
+			// "clean" is added in callMaven
+			callMaven((String) null, tempPomFile.getParentFile(), false);
 		} catch (MavenCallFailedException e) {
 			throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 		}
@@ -285,8 +286,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 	private Document removeDependency(Document aDoc, Dependency aDependency, File aFile) throws MojoExecutionException {
 		return updateDocument(aDoc, aDependency, aFile, new NodeModifyAction() {
 			@Override
-			public void modify(@SuppressWarnings("unused")
-			Document anUpdateDoc, Node aFoundDependency, String aDependencyId) {
+			public void modify(@SuppressWarnings("unused") Document anUpdateDoc, Node aFoundDependency,
+					String aDependencyId) {
 				Log tempLog = getLog();
 				tempLog.info("Try to remove " + aDependencyId);
 				aFoundDependency.getParentNode().removeChild(aFoundDependency);
@@ -388,7 +389,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		final Log tempLog = getLog();
 		List<String> tempArgs = new ArrayList<String>();
 		tempArgs.add("clean");
-		tempArgs.add(aGoal);
+		if (aGoal != null) {
+			tempArgs.add(aGoal);
+		}
 
 		if (debug2ndMaven) {
 			tempArgs.add("-X");
