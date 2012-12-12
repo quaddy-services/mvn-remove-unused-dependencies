@@ -83,7 +83,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			}
 		}
 		String tempPackaging = project.getPackaging();
-		if (tempPackaging == null || tempPackaging.equals("jar")) {
+		if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
 			tempLog.debug("ok:" + tempPackaging);
 		} else {
 			tempLog.debug("Packaging not supported: " + tempPackaging);
