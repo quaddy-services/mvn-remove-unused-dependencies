@@ -394,7 +394,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 
 		if (debug2ndMaven) {
-			tempArgs.add("-X");
+			if (tempLog.isDebugEnabled()) {
+				tempArgs.add("-X");
+			}
 		}
 
 		for (String tempAddArg : anAdditionalParameters) {
@@ -408,8 +410,12 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		StreamConsumer output = new StreamConsumer() {
 			@Override
 			public void consumeLine(String aLine) {
-				if (tempLog.isDebugEnabled()) {
-					tempLog.debug("[Unused] " + aLine);
+				if (debug2ndMaven) {
+					tempLog.info("[Unused] " + aLine);
+				} else {
+					if (tempLog.isDebugEnabled()) {
+						tempLog.debug("[Unused] " + aLine);
+					}
 				}
 				tempLines.append(aLine);
 				tempLines.append(CRLF);
@@ -418,8 +424,12 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		StreamConsumer error = new StreamConsumer() {
 			@Override
 			public void consumeLine(String aLine) {
-				if (tempLog.isDebugEnabled()) {
-					tempLog.debug("[Unused] " + aLine);
+				if (debug2ndMaven) {
+					tempLog.info("[Unused] " + aLine);
+				} else {
+					if (tempLog.isDebugEnabled()) {
+						tempLog.debug("[Unused] " + aLine);
+					}
 				}
 				tempLines.append(aLine);
 				tempLines.append(CRLF);

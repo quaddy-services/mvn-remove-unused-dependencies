@@ -11,3 +11,6 @@ mvn de.quaddyservices.mvn.plugin.unused:mvn-remove-unused-dependencies:remove
 
 (for single parents):
 mvn de.quaddyservices.mvn.plugin.unused:mvn-remove-unused-dependencies:remove -Dremove.includeParent=true
+
+To Debug use
+-Dremove.debug2ndMaven=true
