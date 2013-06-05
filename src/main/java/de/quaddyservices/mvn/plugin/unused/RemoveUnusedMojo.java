@@ -2,7 +2,9 @@ package de.quaddyservices.mvn.plugin.unused;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,19 +87,40 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		String tempPackaging = project.getPackaging();
 		boolean tempJavaProject;
 		if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
-			tempLog.debug("ok:" + tempPackaging);
+			tempLog.debug("ok:Java=" + tempPackaging);
 			tempJavaProject = true;
 		} else if (tempPackaging.equals("ear") || tempPackaging.equals("war") || tempPackaging.equals("zip")) {
 			tempJavaProject = false;
+			tempLog.debug("ok:Resource=" + tempPackaging);
 		} else {
 			tempLog.debug("Packaging not supported: " + tempPackaging);
 			return;
 		}
-
-		try {
-			callMaven("package", tempPomFile.getParentFile(), false);
-		} catch (MavenCallFailedException e) {
-			throw new MojoExecutionException("clean package goal must work!", e);
+		File tempDepencyResolveFile = new File("target/dependencies.txt");
+		String tempDepencyResolveContent = "";
+		if (tempJavaProject) {
+			try {
+				callMaven("package", tempPomFile.getParentFile(), false);
+			} catch (MavenCallFailedException e) {
+				throw new MojoExecutionException("package goal must work!", e);
+			}
+		} else {
+			// Not Java but Resource Project
+			try {
+				callMaven("package", tempPomFile.getParentFile(), false, "dependency:resolve",
+						"-DincludeScope=compile", "-DoutputFile=" + tempDepencyResolveFile, "-Dsort=true");
+			} catch (MavenCallFailedException e) {
+				throw new MojoExecutionException("dependency:resolve goal must work!", e);
+			}
+			if (!tempDepencyResolveFile.exists()) {
+				throw new MojoExecutionException("Could not dependency:resolve to "
+						+ tempDepencyResolveFile.getAbsolutePath());
+			}
+			try {
+				tempDepencyResolveContent = readContent(tempDepencyResolveFile);
+			} catch (IOException e) {
+				throw new MojoExecutionException("Cannot read " + tempDepencyResolveFile.getAbsolutePath(), e);
+			}
 		}
 		Document tempDoc;
 		try {
@@ -124,9 +147,9 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			throw new MojoExecutionException("Could not rename " + tempPomFile.getAbsolutePath() + " to "
 					+ tempPomBackupFile.getAbsolutePath());
 		}
-		for (Dependency tempDependency : tempDependencies) {
-			String tempScope = tempDependency.getScope();
-			if (tempJavaProject) {
+		if (tempJavaProject) {
+			for (Dependency tempDependency : tempDependencies) {
+				String tempScope = tempDependency.getScope();
 				if (tempScope == null || tempScope.equals("compile") || tempScope.equals("provided")) {
 					tempLog.debug("Check compile dependency " + tempDependency.getArtifactId());
 					Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
@@ -171,8 +194,40 @@ public class RemoveUnusedMojo extends AbstractMojo {
 				} else {
 					tempLog.info("Skip dependency " + tempDependency.getArtifactId() + " Scope=" + tempScope);
 				}
-			} else {
-				// Not Java but Resource Project
+			}
+		} else {
+			// Not Java but Resource Project
+			for (Dependency tempDependency : tempDependencies) {
+				String tempScope = tempDependency.getScope();
+				if (tempScope == null || tempScope.equals("compile")) {
+					tempLog.debug("Check resource dependency " + tempDependency.getArtifactId());
+					Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
+					if (tempModifiedDoc != null) {
+						try {
+							callMaven("package", tempPomFile.getParentFile(), true, "dependency:resolve",
+									"-DincludeScope=compile", "-DoutputFile=" + tempDepencyResolveFile, "-Dsort=true");
+							String tempNewDependencies = readContent(tempDepencyResolveFile);
+							if (tempNewDependencies.equals(tempDepencyResolveContent)) {
+								tempLog.info("-------------------------------------------------------------------------");
+								tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
+								tempLog.info("-------------------------------------------------------------------------");
+								tempDoc = tempModifiedDoc;
+								tempModified = true;
+							} else {
+								tempLog.info("Dependeny is needed because other resolved info: "
+										+ tempDependency.getArtifactId());
+							}
+						} catch (IOException e) {
+							tempLog.info("Dependeny is needed: " + tempDependency.getArtifactId() + " Scope="
+									+ tempScope + " " + e);
+							tempLog.debug("Stacktrace", e);
+						} catch (MavenCallFailedException e) {
+							tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for test");
+						}
+					}
+				} else {
+					tempLog.info("Skip dependency " + tempDependency.getArtifactId() + " Scope=" + tempScope);
+				}
 			}
 		}
 		if (tempModified) {
@@ -229,6 +284,23 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		} catch (MavenCallFailedException e) {
 			throw new MojoExecutionException("Failed to deploy " + tempPomFile, e);
 		}
+	}
+
+	/**
+	 * readContent
+	 * 
+	 * @param aDepencyResolveFile
+	 * @return
+	 * @throws MojoExecutionException 
+	 * @since 05.06.2013 22:21:30
+	 */
+	private String readContent(File aDepencyResolveFile) throws IOException {
+		int tempSize = (int) aDepencyResolveFile.length();
+		byte[] tempBuff = new byte[tempSize];
+		FileInputStream tempIn = new FileInputStream(aDepencyResolveFile);
+		tempIn.read(tempBuff);
+		tempIn.close();
+		return new String(tempBuff);
 	}
 
 	/**
