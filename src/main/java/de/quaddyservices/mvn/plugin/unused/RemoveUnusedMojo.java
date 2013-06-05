@@ -83,8 +83,12 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			}
 		}
 		String tempPackaging = project.getPackaging();
+		boolean tempJavaProject;
 		if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
 			tempLog.debug("ok:" + tempPackaging);
+			tempJavaProject = true;
+		} else if (tempPackaging.equals("ear") || tempPackaging.equals("war") || tempPackaging.equals("zip")) {
+			tempJavaProject = false;
 		} else {
 			tempLog.debug("Packaging not supported: " + tempPackaging);
 			return;
@@ -122,49 +126,53 @@ public class RemoveUnusedMojo extends AbstractMojo {
 		}
 		for (Dependency tempDependency : tempDependencies) {
 			String tempScope = tempDependency.getScope();
-			if (tempScope == null || tempScope.equals("compile") || tempScope.equals("provided")) {
-				tempLog.debug("Check compile dependency " + tempDependency.getArtifactId());
-				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
-				if (tempModifiedDoc != null) {
-					try {
-						callMaven("package", tempPomFile.getParentFile(), true);
-						tempLog.info("-------------------------------------------------------------------------");
-						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
-						tempLog.info("-------------------------------------------------------------------------");
-						tempDoc = tempModifiedDoc;
-						tempModified = true;
-					} catch (MavenCallFailedException e) {
-						tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for compile");
-						tempModifiedDoc = changeScope(tempDoc, tempDependency, tempPomFile, "test");
+			if (tempJavaProject) {
+				if (tempScope == null || tempScope.equals("compile") || tempScope.equals("provided")) {
+					tempLog.debug("Check compile dependency " + tempDependency.getArtifactId());
+					Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
+					if (tempModifiedDoc != null) {
 						try {
 							callMaven("package", tempPomFile.getParentFile(), true);
 							tempLog.info("-------------------------------------------------------------------------");
-							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is for test only");
+							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
 							tempLog.info("-------------------------------------------------------------------------");
 							tempDoc = tempModifiedDoc;
 							tempModified = true;
-						} catch (MavenCallFailedException e2) {
+						} catch (MavenCallFailedException e) {
+							tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for compile");
+							tempModifiedDoc = changeScope(tempDoc, tempDependency, tempPomFile, "test");
+							try {
+								callMaven("package", tempPomFile.getParentFile(), true);
+								tempLog.info("-------------------------------------------------------------------------");
+								tempLog.info("Dependency " + tempDependency.getArtifactId() + " is for test only");
+								tempLog.info("-------------------------------------------------------------------------");
+								tempDoc = tempModifiedDoc;
+								tempModified = true;
+							} catch (MavenCallFailedException e2) {
+								tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for test");
+							}
+						}
+					}
+				} else if (tempScope.equals("test")) {
+					tempLog.debug("Remove test dependency " + tempDependency.getArtifactId());
+					Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
+					if (tempModifiedDoc != null) {
+						try {
+							callMaven("package", tempPomFile.getParentFile(), true);
+							tempLog.info("-------------------------------------------------------------------------");
+							tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
+							tempLog.info("-------------------------------------------------------------------------");
+							tempDoc = tempModifiedDoc;
+							tempModified = true;
+						} catch (MavenCallFailedException e) {
 							tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for test");
 						}
 					}
-				}
-			} else if (tempScope.equals("test")) {
-				tempLog.debug("Remove test dependency " + tempDependency.getArtifactId());
-				Document tempModifiedDoc = removeDependency(tempDoc, tempDependency, tempPomFile);
-				if (tempModifiedDoc != null) {
-					try {
-						callMaven("package", tempPomFile.getParentFile(), true);
-						tempLog.info("-------------------------------------------------------------------------");
-						tempLog.info("Dependency " + tempDependency.getArtifactId() + " is not needed");
-						tempLog.info("-------------------------------------------------------------------------");
-						tempDoc = tempModifiedDoc;
-						tempModified = true;
-					} catch (MavenCallFailedException e) {
-						tempLog.debug("Dependency " + tempDependency.getArtifactId() + " is needed for test");
-					}
+				} else {
+					tempLog.info("Skip dependency " + tempDependency.getArtifactId() + " Scope=" + tempScope);
 				}
 			} else {
-				tempLog.info("Skip dependency " + tempDependency.getArtifactId() + " Scope=" + tempScope);
+				// Not Java but Resource Project
 			}
 		}
 		if (tempModified) {
