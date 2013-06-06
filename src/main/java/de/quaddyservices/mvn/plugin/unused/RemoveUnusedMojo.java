@@ -96,7 +96,7 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			tempLog.debug("Packaging not supported: " + tempPackaging);
 			return;
 		}
-		File tempDepencyResolveFile = new File("target/dependencies.txt");
+		File tempDepencyResolveFile = new File(tempPomFile.getParentFile() + "/target/dependencies.txt");
 		String tempDepencyResolveContent = "";
 		if (tempJavaProject) {
 			try {
@@ -108,7 +108,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			// Not Java but Resource Project
 			try {
 				callMaven("package", tempPomFile.getParentFile(), false, "dependency:resolve",
-						"-DincludeScope=compile", "-DoutputFile=" + tempDepencyResolveFile, "-Dsort=true");
+						"-DincludeScope=compile", "-DexcludeScope=test", "-DoutputFile=" + tempDepencyResolveFile,
+						"-Dsort=true");
 			} catch (MavenCallFailedException e) {
 				throw new MojoExecutionException("dependency:resolve goal must work!", e);
 			}
@@ -205,7 +206,8 @@ public class RemoveUnusedMojo extends AbstractMojo {
 					if (tempModifiedDoc != null) {
 						try {
 							callMaven("package", tempPomFile.getParentFile(), true, "dependency:resolve",
-									"-DincludeScope=compile", "-DoutputFile=" + tempDepencyResolveFile, "-Dsort=true");
+									"-DincludeScope=compile", "-DexcludeScope=test", "-DoutputFile="
+											+ tempDepencyResolveFile, "-Dsort=true");
 							String tempNewDependencies = readContent(tempDepencyResolveFile);
 							if (tempNewDependencies.equals(tempDepencyResolveContent)) {
 								tempLog.info("-------------------------------------------------------------------------");
