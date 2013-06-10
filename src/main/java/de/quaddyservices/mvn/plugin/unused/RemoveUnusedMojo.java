@@ -85,14 +85,26 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			}
 		}
 		String tempPackaging = project.getPackaging();
-		boolean tempJavaProject;
-		if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
-			tempLog.debug("ok:Java=" + tempPackaging);
-			tempJavaProject = true;
-		} else if (tempPackaging.equals("ear") || tempPackaging.equals("war") || tempPackaging.equals("zip")) {
+		Boolean tempJavaProject = null;
+		if (project.getArtifactId().endsWith("-runtime") && (tempPackaging == null || tempPackaging.equals("jar"))) {
+			tempLog.debug("ok:ArtifactId=*-runtime:" + tempPackaging);
 			tempJavaProject = false;
-			tempLog.debug("ok:Resource=" + tempPackaging);
-		} else {
+		}
+		if (tempJavaProject == null) {
+			if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
+				tempLog.debug("ok:Java=" + tempPackaging);
+				tempJavaProject = true;
+			}
+		}
+		if (tempJavaProject == null) {
+			if (tempPackaging != null) {
+				if (tempPackaging.equals("ear") || tempPackaging.equals("war") || tempPackaging.equals("zip")) {
+					tempJavaProject = false;
+					tempLog.debug("ok:Resource=" + tempPackaging);
+				}
+			}
+		}
+		if (tempJavaProject == null) {
 			tempLog.debug("Packaging not supported: " + tempPackaging);
 			return;
 		}
