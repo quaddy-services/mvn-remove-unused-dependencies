@@ -91,6 +91,12 @@ public class RemoveUnusedMojo extends AbstractMojo {
 			tempJavaProject = false;
 		}
 		if (tempJavaProject == null) {
+			if (project.getArtifactId().endsWith("-launch") && (tempPackaging == null || tempPackaging.equals("jar"))) {
+				tempLog.debug("ok:ArtifactId=*-launch:" + tempPackaging);
+				tempJavaProject = false;
+			}
+		}
+		if (tempJavaProject == null) {
 			if (tempPackaging == null || tempPackaging.equals("jar") || tempPackaging.equals("ejb")) {
 				tempLog.debug("ok:Java=" + tempPackaging);
 				tempJavaProject = true;
